@@ -1,0 +1,153 @@
+porousFoam v3 (Release version)
+
+This is a code for porous media dissolution using a Darcy-Brinkman flow
+solver. It is designed to have user programmable constitutive models,
+examples of which are in the Models subdirectory.  Version 3 supports
+multiple mineral and concentration fields; the algorithm is explained
+in rates.pdf
+
+The external pressure gradient should always be in the x direction.
+There are some sample cases in porousCases_v3, which has its own README.
+The sole input fields are the mineral fractions F0, F1, etc. although
+other fields (p, U, Cx) need to be initialized and their boundary
+conditions defined; this is taken care of automatically once the
+number of each species is specified (system/porousFoamDict)
+
+Version numbering follows a traditional pattern: the first digit
+indicates a major change with new functionality and possible changes
+in input/output; the second digit indicates minor improvements in
+functionality, code cleanup, and bugfixes; the third digit is for
+bug fixes.
+
+
+Todo
+
+Correct for Darcy velocity in UEqn.H - multiply Laplacian by 1/phi
+Include a full 2nd order update with a smooth specific surface area
+(Calculate rates with F(t+dt/2)
+
+
+Changelog
+
+v3.1: 12/21/16
+1) Fixed loss of mass conservation from Heun update of mineral fractions
+Now uses a mid-point update.
+Note: a slightly different code will be required for smoothly vanishing
+reactive surface area models.
+2) Changed time scaling to eliminate k0: t* = <u>*gamma*t/L, where
+L is the unit of length (points in blockMeshDict)
+A planar front propagates with a dimensionless velocity 1/F0(t=0)
+
+v3: 7/12/16 
+1) Separated the 2D fracture aperture model from porousFoam; it now
+has its own development line called fractureFoam
+2) New include file for Darcy solver (darcy.H)
+3) Minor code clean up
+4) Updated and retested the case files (porousCases_v3)
+
+
+v2.1.1: 5/18/16 
+1) Bugfix: corrected derivative calculation in reacNonlinearFrac.H and
+reacNonLinear.H in transition region
+
+v2.1: 4/6/16 
+1) Pressure is now scaled by viscosity
+    Units in 0.org/p should be 1/time
+2) Use pressureInletVelocity condition on U
+
+v2: 1/28/16 
+1) Add multifield support for F and C
+2) Added general support for mineral and porosity limits
+3) Include danckwerts bc (replace danckwerts.H)
+4) Switch 0org/U to pressureInletVelocity boundary conditions
+5) Moved solver flags and parameters to a dictionary (porousFoamDict)
+6) Additional fields for multicomponent solver
+7) Removed unnecessary fields
+8) Kinv, R, dR, D converted to dimensioned fields
+9) Combined the flow solvers into one file (solveU.H)
+
+
+v1.0.1: 1/1/16
+1) Midpoint time stepping
+2) Added Dankwerts BC (danckwerts.H)
+3) Added aperture limiter
+4) Added nonlinear kinetics (reacNonLin.H)
+5) Added a flow limiter (Qmax)
+6) Reorganized and corrected startup
+
+------------------------------------------------------------------------
+
+Fields
+
+There are many fields in this code - see createFields.H
+The primary fields p, U, Cx, Fx (Fx is a mineral fraction) require
+input files (see 0.org). The code allows for a number of (immobile)
+minerals (Fx) and aqueous concentrations (Cx).
+
+The secondary fields are created within the code; they don't require
+input files but P (porosity = 1-F) is output.  The secondary fields
+include pointers to multiple fields: Rx (reaction rates), dRx (rate
+constants), and dFx (increments in mineral fraction). In addition there
+is Kinv (inverse permeability), R (species rate), dR (species rate
+constant), and D (dispersion tensor for current species).
+
+------------------------------------------------------------------------
+
+Scalings
+
+Pressure: unscaled
+For Darcy flow its scale is irrelevant. However, for Brinkman flows
+it may help convergence if the mean fluid velocity is approximately one.
+This means that the computed Uscale should be close to unity at t = 0.
+Velocity: Scaled so the mean outlet velocity is 1 at t=0.
+With QCON=false, the pressure drop remains constant.
+With QCON=true, the velocity is rescaled so <U> is 1 across the outlet.
+The scaled mean velocity is always limited to Qmax.
+Volume flux (phi): Scaled with U.
+Concentration: Scaled to a reference concentration, typically C_in.
+
+------------------------------------------------------------------------
+
+Constitutive models
+
+Some of the fields require a constitutive model: K, D, R.
+The user is expected to create their own model functions:
+permModel.H, dispModel.H, and reacModel.H. Some examples are in the
+Models subdirectory. These reaction function must also calculate
+the derivative of the reaction rate with respect to concentration (dR).
+
+The code includes the limits imposed by the mineral concentrations
+and porosity in a general way (kinetics.H). It ensures each mineral
+fraction remains positive and that the porosity remains above Pmin.
+
+The reaction model (reacModel.H) needs a table of stoichiometry numbers
+as well as the rates and derivatives for each reaction. It needs to be
+programmed using autoPointers (CList etc.) to allow for multiple fields.
+There are example files in the Models directory.
+
+Notes:
+1) the output velocity field is calculated from the pressure gradient
+and it not conservative. You can sometimes see a discontinuity in the
+velocity near the inlet. However, the convective flux in the
+concentration solver is calculated using the surface volume flux
+field (phi) and is conservative.
+2) porousFOAM uses a 2nd order (midpoint) time update.
+3) the reaction rate should be a smooth function of C (see reacNonLin.H)
+
+------------------------------------------------------------------------
+
+Darcy-Brinkmann model
+
+Notes:
+1) The SIMPLE algorithm (in the Darcy-Brinkman solver) does not always
+converge well when the permeability is large (so the Laplacian
+contribution is significant). In these cases it may help to underrelax
+the pressure more than usual (<0.05).
+2) I do not include the 1/porosity factor in the Laplacian of the
+velocity because it makes the SIMPLE loop less stable. When the porosity
+is small, the Laplacian makes a negligible difference in any case.
+
+------------------------------------------------------------------------
+
+
+Last modified 12/30/2016
