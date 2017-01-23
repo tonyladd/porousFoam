@@ -34,7 +34,7 @@ v3.1: 12/21/16
 Now uses a mid-point update.
 Note: a slightly different code will be required for smoothly vanishing
 reactive surface area models.
-2) Changed time scaling to eliminate k0: t* = <u>*gamma*t/L, where
+2) Changed time scaling to remove k0: t* = <u>*gamma*t/L, where
 L is the unit of length (points in blockMeshDict)
 A planar front propagates with a dimensionless velocity 1/F0(t=0)
 
