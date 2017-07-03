@@ -118,10 +118,16 @@
     dimensionedScalar K0 (transportProperties.lookup("K0"));
     dimensionedScalar D0 (transportProperties.lookup("D0"));
     dimensionedScalar k0 (transportProperties.lookup("k0"));
+    scalar Da=1;
+    if( !transportProperties.readIfPresent<scalar>("Da", Da) ){
+        Info << "No Da in transportProperties : set Da = 1" << endl;
+    }
+
 
     Info << "K0 = K0/L^2:  " << K0 << endl;
     Info << "D0 = U0*L/Pe: " << D0 << endl;
     Info << "k0 = Da*U0/L: " << k0 << endl;
+    Info << "Da: " << Da << endl;
 
     Info << "***************************************************" << nl
          << endl;

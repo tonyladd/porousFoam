@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
         Info << "Debugging turned on" << nl;
 
 //  Set time step
-    dimensionedScalar deltaT = runTime.deltaT();
-    Info << "dimensionless timestep = <u>*dt/L: " << deltaT << endl;
+    dimensionedScalar deltaT = runTime.deltaT()/Da;
+    Info << "dimensionless timestep = Da*<u>*dt/l0: " << deltaT << endl;
 
 //  Initialize fields (at t=0 and on restart)
     Info << nl << "Time = " << runTime.timeName() << endl;
